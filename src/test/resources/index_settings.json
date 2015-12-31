@@ -1,0 +1,26 @@
+{
+  "number_of_shards": 1,
+  "analysis": {
+    "analyzer": {
+      "index_ngram": {
+        "char_filter": ["punctuation_greedy"],
+        "filter": ["lowercase", "asciifolding"],
+        "tokenizer": "simple_ngram_tokenizer"
+      }
+    },
+    "char_filter": {
+      "punctuation_greedy": {
+        "type": "pattern_replace",
+        "pattern": "[\\.,]"
+      }
+    },
+    "tokenizer" : {
+      "simple_ngram_tokenizer" : {
+        "type" : "ngram",
+        "min_gram" : "2",
+        "max_gram" : "3",
+        "token_chars": [ "letter", "digit" ]
+      }
+    }
+  }
+}
