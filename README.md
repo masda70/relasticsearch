@@ -7,7 +7,9 @@ Uses ElasticSearch's Java Transport Client v1.7.4.
 Built using [SBT](http://www.scala-sbt.org/).
 
 ## Usage
-```Usage: relasticsearch [options]
+
+```
+Usage: relasticsearch [options]
  -f <uri> | --from <uri>
         source transport address/index/type, e.g. es://192.168.1.123:9300/old_index/old_type
  -t <uri> | --to <uri>
