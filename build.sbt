@@ -25,7 +25,7 @@ val akkaStreamLibrary = "com.typesafe.akka" %% "akka-stream-experimental" % "2.0
 
 val json4sLibrary = "org.json4s" %% "json4s-jackson" % "3.2.10"
 
-val elasticSearchLibrary = "org.elasticsearch" % "elasticsearch" % "1.7.3"
+val elasticSearchLibrary = "org.elasticsearch" % "elasticsearch" % "1.7.4"
 
 val apacheCommonsIOLibrary = "commons-io" % "commons-io" % "2.4"
 
