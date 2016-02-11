@@ -16,7 +16,7 @@ val logLibraries = Seq(
   "ch.qos.logback" % "logback-classic" % "1.1.3"
 )
 
-mainClass in Compile := Some("com.masda70.relasticsearch.ReIndexer")
+mainClass in Compile := Some("com.masda70.relasticsearch.Indexer")
 
 // Akka testing fails otherwise
 sbt.Keys.fork in Test := true
