@@ -9,7 +9,6 @@ import akka.stream.scaladsl.{Keep, Flow, Sink, Source}
 import com.typesafe.scalalogging.StrictLogging
 import org.elasticsearch.client.Client
 import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.common.settings.ImmutableSettings
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.unit.TimeValue
@@ -17,6 +16,7 @@ import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.SearchHits
 import futures.ListenableActionFutureExtensions._
 import java.net.URI
+import java.net.InetSocketAddress;
 import scala.concurrent.{Future, Await, ExecutionContext}
 
 /**
@@ -64,10 +64,18 @@ object Indexer extends StrictLogging{
   }
 
   def client(host: String, port: Int) = {
-    val sBuilder: ImmutableSettings.Builder = ImmutableSettings.settingsBuilder
+    val sBuilder = Settings.builder()
     sBuilder.put("client.transport.ignore_cluster_name", true)
     val settings: Settings = sBuilder.build
-    new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(host, port))
+    val client = TransportClient.builder().settings(settings).build()
+    try {
+      client.addTransportAddress(new InetSocketTransportAddress(new InetSocketAddress(host, port)))
+    }catch{
+      case e:Exception =>
+        client.close()
+        throw e
+    }
+    client
   }
 
   def getDocumentIds(client: Client, index: String,
@@ -124,6 +132,7 @@ object Indexer extends StrictLogging{
         val future = bulkReq.execute().future
         future
     }
+
     val future = bulkResponses.runWith(Sink.foreach{
       response => ()
         if(response.hasFailures){
@@ -133,7 +142,7 @@ object Indexer extends StrictLogging{
       _ => toClient.admin().indices().prepareRefresh(toIndex).execute().future.map(_ => ())
     }
     future.onFailure{
-      case t => logger.error(s"Error during ReIndexing: ${helpers.ExceptionUtils.getStackTrace(t)}")
+      case t => logger.error(s"Error during reindexing: ${helpers.ExceptionUtils.getStackTrace(t)}")
     }
     future
   }
@@ -143,22 +152,29 @@ object Indexer extends StrictLogging{
       case Some(config) =>
         (config.from.getPath.split("/"), config.to.getPath.split("/")) match{
           case (Array(_, fromIndex, fromType), Array(_, toIndex, toType)) =>
-            val fromClient = client(config.from.getHost, config.from.getPort)
-            val toClient = client(config.to.getHost, config.to.getPort)
-            logger.info(s"Reindexing from ${config.from.getHost}:${config.from.getPort}/$fromIndex/$fromType to ${config.to.getHost}:${config.to.getPort}/$toIndex/$toType...")
-            import actors._
-            import scala.concurrent.ExecutionContext.Implicits.global
-            val future = reindex(fromClient, fromIndex, fromType, toClient, toIndex, toType)
-            future.onComplete{
-              case _ =>
+            try {
+              val fromClient = client(config.from.getHost, config.from.getPort)
+              val toClient = client(config.to.getHost, config.to.getPort)
+              import actors._
+              try {
+                logger.info(s"Reindexing from ${config.from.getHost}:${config.from.getPort}/$fromIndex/$fromType to ${config.to.getHost}:${config.to.getPort}/$toIndex/$toType...")
+                import scala.concurrent.ExecutionContext.Implicits.global
+                val future = reindex(fromClient, fromIndex, fromType, toClient, toIndex, toType)
+                Await.ready(future.map {
+                  case result =>
+                    logger.info(s"Done reindexing.")
+                }, scala.concurrent.duration.Duration.Inf)
+                ()
+              } finally {
                 fromClient.close()
                 toClient.close()
+                materializer.shutdown()
+                system.shutdown()
+              }
+            } catch {
+              case e:Exception =>
+                logger.error(s"Error: ${e.getMessage}")
             }
-            Await.ready(future.map {
-              case result =>
-                logger.info(s"Done reindexing.")
-            }, scala.concurrent.duration.Duration.Inf)
-            ()
           case _ => assert(assertion = false, "expected URIs with path of type /<index>/<type>. This should have failed earlier.")
         }
       case None =>

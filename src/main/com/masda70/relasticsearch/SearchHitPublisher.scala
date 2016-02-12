@@ -30,27 +30,33 @@ class SearchHitPublisher(client: Client,
   }
 
   def nextHits(): Unit = {
-    val future = executeQuery()
-    future.foreach{
-      response =>
-        if(response.getHits.hits.nonEmpty){
-          if(isActive && totalDemand > 0){
-            executeQuery = () => client.prepareSearchScroll(response.getScrollId).setScroll(scrollTime).execute().future
-            nextHits()
-            onNext(response.getHits)
-          }else{
+    try {
+      val future = executeQuery()
+      future.foreach {
+        response =>
+          if (response.getHits.hits.nonEmpty) {
+            if (isActive && totalDemand > 0) {
+              executeQuery = () => client.prepareSearchScroll(response.getScrollId).setScroll(scrollTime).execute().future
+              nextHits()
+              onNext(response.getHits)
+            } else {
+              handlingRequest.set(false)
+            }
+          } else {
+            onComplete()
             handlingRequest.set(false)
           }
-        }else{
-          onComplete()
-          handlingRequest.set(false)
-        }
 
-    }
-    future.onFailure{
-      case t =>
+      }
+      future.onFailure {
+        case t =>
+          handlingRequest.set(false)
+          onError(t)
+      }
+    } catch {
+      case t:Exception =>
         handlingRequest.set(false)
-        throw t
+        onError(t)
     }
   }
 
