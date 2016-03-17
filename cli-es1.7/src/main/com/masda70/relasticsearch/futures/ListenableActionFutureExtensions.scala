@@ -11,6 +11,9 @@ import scala.util.{Failure, Success}
  */
 object ListenableActionFutureExtensions {
 
+  implicit def listenableActionFutureAsScalaFuture[T](listenableActionFuture: ListenableActionFuture[T]): ListenableActionFutureAsScalaFuture[T]
+  = new ListenableActionFutureAsScalaFuture(listenableActionFuture)
+
   class ListenableActionFutureAsScalaFuture[T](listenableActionFuture: ListenableActionFuture[T]){
     def future = {
       val promise = Promise[T]()
@@ -26,7 +29,4 @@ object ListenableActionFutureExtensions {
       promise.future
     }
   }
-
-  implicit def listenableActionFutureAsScalaFuture[T](listenableActionFuture: ListenableActionFuture[T]): ListenableActionFutureAsScalaFuture[T]
-    = new ListenableActionFutureAsScalaFuture(listenableActionFuture)
 }

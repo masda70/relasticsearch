@@ -7,3 +7,4 @@
 # sbt specific
 target/
 /data
+/tmp
