@@ -2,7 +2,7 @@
 
 Reindexing Tool for [ElasticSearch](https://www.elastic.co) written in [Scala](http://www.scala-lang.org/) using [Akka Streams](http://doc.akka.io/docs/akka-stream-and-http-experimental/2.0.1/scala.html).
 
-Uses ElasticSearch's Java Transport Client v1.7.4.
+Supports ElasticSearch's Java Transport Client v1.7.4, v2.0.2, v2.1.2 and v2.2.0.
 
 Built using [SBT](http://www.scala-sbt.org/).
 
