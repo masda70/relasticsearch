@@ -18,7 +18,7 @@ val mapDBLibrary = "org.mapdb" % "mapdb" % "3.0.0-M2"
 
 val commonSettings = Seq(
   organization := "com.masda70",
-  version := "0.1.1",
+  version := "0.2.0",
   scalaVersion := "2.11.7",
   scalaVersion in ThisBuild := "2.11.7",
   scalaSource in Compile := baseDirectory.value / "src/main",
